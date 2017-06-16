@@ -125,8 +125,9 @@ def trocaCabos(adjacencia, vertices, origem, destino):
     return menor, posMenor, (precoN - precoO)
 
 def calculoPreco(distancia, banda):
-    valorPorMetro = {1 : 1.00, 3 : 1.50, 10 : 2.00, 20 : 2.50}
-    return valorPorMetro[banda] * distancia
+    valorPorMetro = 6.00
+    valorPorBanda = {1 : 15000, 3 : 35000, 10 : 60000, 20 : 90000}
+    return valorPorBanda[banda] + (valorPorMetro * distancia)
 
 
 def nomeVertice(id_v, vertices):
@@ -134,31 +135,59 @@ def nomeVertice(id_v, vertices):
         if(value == id_v):
             return key
 
-#test = math.inf
+def nomeAresta(banda, id_o, id_d, vertices):
+    valorBanda = str(banda)
+    retorno = "(" + "{:>2}".format(valorBanda) + "Gb/s) - " + nomeVertice(id_o, vertices) + " -> " + nomeVertice(id_d, vertices)
+    return "{:<42}".format(retorno)
+
 vertices, adjacencia = carregaGrafo("rede_ipe.txt")
 
 matrizD, matrizS = criaMatriz(vertices, adjacencia)
 matrizD, matrizS = floydwarshall(matrizD, matrizS);
 menorO, posMenorO = calculaMenorCustoTotal(matrizD)
 
+print "================================================================================================================================"
+print "Grafo Original:"
+print "Menor tempo de broadcast (s)\tVertice de origem do broadcast"
+print menorO, "\t\t\t", nomeVertice(posMenorO, vertices)
+print "================================================================================================================================"
+print "Upgrade de arestas:"
+print "(Nova banda) - Aresta atualizada\t\tMelhor broadcast (s)\tCusto upgrade\tCusto-beneficio (ms/R$)"
+print "================================================================================================================================"
 
 maiorCustoBeneficio = 0
+menorTempoDeBroadcast = INF
 
 for i in range(len(vertices)):
     for aresta in adjacencia[i]:
-        menor, posM, dif = trocaCabos(adjacencia, vertices, i, vertices[aresta["vertice"]])
-        if(dif != 0):
-            custoBeneficio = (menorO - menor)/dif
-            #print "menor: ", menor, "posMenor: ", posM, "custo beneficio (ms/Reais) ", custoBeneficio
-            if (custoBeneficio > maiorCustoBeneficio):
-                maiorCustoBeneficio = custoBeneficio
-                x = menor
-                y = posM
-                origem = i
-                destino = vertices[aresta["vertice"]]
+	if (aresta["banda"] < 20):
+            menorTempo, posM, dif = trocaCabos(adjacencia, vertices, i, vertices[aresta["vertice"]])
+            if(dif != 0):
+                custoBeneficio = (menorO - menorTempo)/dif * 1000 #ms/R$, nao s/R$
+		print nomeAresta(aresta["banda"], i, vertices[aresta["vertice"]], vertices), "\t", menorTempo, "\t\tR$%.2f" % (dif), "\t", custoBeneficio
+                if (custoBeneficio > maiorCustoBeneficio):
+                    maiorCustoBeneficio = custoBeneficio
+                    maiorCustoBeneficio_Tempo = menorTempo
+                    maiorCustoBeneficio_nome = nomeAresta(aresta["banda"], i, vertices[aresta["vertice"]], vertices)
+                    maiorCustoBeneficio_custo = dif
+                if (menorTempo < menorTempoDeBroadcast):
+                    menorTempoDeBroadcast_CustoBeneficio = custoBeneficio
+                    menorTempoDeBroadcast = menorTempo
+                    menorTempoDeBroadcast_nome = nomeAresta(aresta["banda"], i, vertices[aresta["vertice"]], vertices)
+                    menorTempoDeBroadcast_custo = dif
 
-print "Menor atraso total: ", x , "Posicao: ", y, "Origem: ", nomeVertice(origem, vertices), "Destino: ", nomeVertice(destino, vertices), "CustoBeneficio: ", maiorCustoBeneficio
+print "================================================================================================================================"
+print
+print "================================================================================================================================"
+print "Resultados:"
+print "================================================================================================================================"
+print "Aresta com maior Custo-beneficio (ms/R$):"
+print "(Nova banda) - Aresta atualizada\t\tMelhor broadcast (s)\tCusto upgrade\tCusto-beneficio (ms/R$)"
+print maiorCustoBeneficio_nome, "\t", maiorCustoBeneficio_Tempo, "\t\tR$%.2f" % (maiorCustoBeneficio_custo), "\t", maiorCustoBeneficio
+print "================================================================================================================================"
+print "Aresta com menor tempo de broadcast (s):"
+print "(Nova banda) - Aresta atualizada\t\tMelhor broadcast (s)\tCusto upgrade\tCusto-beneficio (ms/R$)"
+print menorTempoDeBroadcast_nome, "\t", menorTempoDeBroadcast, "\t\tR$%.2f" % (menorTempoDeBroadcast_custo), "\t", menorTempoDeBroadcast_CustoBeneficio
+print "================================================================================================================================"
 
-#for aresta in adjacencia[vertices['Salvador']]:
-#    print("Atraso total de Salvador a "+aresta["vertice"]+":")
-#    print(atrasoTransmissao(aresta["banda"]) + atrasoPropragacao(aresta["distancia"]))
+#print "Menor atraso total: ", x , "Posicao: ", y, "Origem: ", nomeVertice(origem, vertices), "Destino: ", nomeVertice(destino, vertices), "CustoBeneficio: ", maiorCustoBeneficio
