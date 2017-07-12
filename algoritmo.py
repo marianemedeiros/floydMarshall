@@ -1,4 +1,5 @@
 import math
+from copy import deepcopy
 
 INF = 999999
 
@@ -108,7 +109,10 @@ def aumentaFibra(valor):
         return 10
     return 20
 
-def trocaCabos(adjacencia, vertices, origem, destino):
+def trocaCabos(adjacenciaOriginal, vertices, origem, destino):
+    adjacencia = deepcopy(adjacenciaOriginal)
+    
+
     for aresta in adjacencia[origem]:
         if(vertices[aresta["vertice"]] == destino):
             precoO = calculoPreco(aresta["distancia"], aresta["banda"])
@@ -146,10 +150,16 @@ matrizD, matrizS = criaMatriz(vertices, adjacencia)
 matrizD, matrizS = floydwarshall(matrizD, matrizS);
 menorO, posMenorO = calculaMenorCustoTotal(matrizD)
 
+custoTotalOriginal = 0
+for i in range(len(vertices)):
+    for aresta in adjacencia[i]:
+	custoTotalOriginal += calculoPreco(aresta["distancia"], aresta["banda"])
+custoTotalOriginal /= 2
+
 print "================================================================================================================================"
 print "Grafo Original:"
-print "Menor tempo de broadcast (s)\tVertice de origem do broadcast"
-print menorO, "\t\t\t", nomeVertice(posMenorO, vertices)
+print "Menor tempo de broadcast (s)\tVertice de origem do broadcast\tCusto total (R$)"
+print menorO, "\t\t\t", nomeVertice(posMenorO, vertices), "\t", custoTotalOriginal
 print "================================================================================================================================"
 print "Upgrade de arestas:"
 print "(Nova banda) - Aresta atualizada\t\tMelhor broadcast (s)\tCusto upgrade\tCusto-beneficio (ms/R$)"
